@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>ELEVATORS</title>
+	<link type="text/css" rel="stylesheet" href="help.css" />
+	<link type="text/css" rel="stylesheet" href="main.css" />
+	<style>
+		body {
+			margin: 0px;
+			padding: 0px;
+		}
+		#general {
+			margin-top: 10px;
+    	-webkit-transform: scale(0.25);
+      	 -moz-transform: scale(0.25);
+      		-ms-transform: scale(0.25);
+        	 -o-transform: scale(0.25);
+          		transform: scale(0.25);   
+		}
+		.floor {
+			height: 110px;
+		}
+		#building {
+			width: 400px;
+			height: auto;
+			min-height: 50px;
+			position: absolute;
+		}
+		#building > div {
+			position: relative;
+		}
+		input[type=button] {
+			padding: 0px auto;	
+			cursor: pointer;
+		}
+		.metal.linear {
+		  margin: 10px 36%;
+		}
+		}
+		#general > div {
+			float: left;
+			margin-right: 10px;
+		}
+		.elevator {
+			background: url('elv.png');
+	    background-size: contain;
+			width: 110px;
+			height: 110px;
+			position: absolute;
+		}
+		.active {
+  		color: #58c044;
+		}
+	</style>
+</head>
+<body onload="addElement(21,5)">
+	<div id="general">
+		<div id="building"></div>
+	</div>
+	<script>
+		var parentElemG = document.getElementById("general");
+		var parentElem1 = document.getElementById("building");
+		var arrFloorTop = [];
+		var numEl;
+		var elevator = {}
+
+/* 
+*	The first argument - numfloor - is the number of floors, taking into account the ground floor;
+*	The second argument -numElevator - is the number of elevators
+*
+* addElement - the function builds a house and elevators, 
+*	as well as arrFloorTop - the position top floors 
+*	and the object - elevator , which stores the parameters of each elevator.
+*/
+		function addElement(numfloor,numElevator) {
+			for (let i=parseInt(numfloor)-1; i>=0; i--) {
+				let div = document.createElement('div');
+				div.innerHTML = "<input type=\"button\" value=\""+i+"\" id=\"button"+i+"\" class=\"metal linear\" onclick=\"startElevator(this)\">";
+				div.className = "floor";
+				parentElem1.appendChild(div);
+				if(i%2==0) {
+					let div1 = document.createElement('div');
+					div1.className = "blackline";
+					parentElem1.appendChild(div1);
+				}
+			}
+			numEl = arrFloorTop.length+2;
+			for (let i=0; i< parseInt(numElevator); i++) {
+				let div = document.createElement('div');
+				div.innerHTML = "<div id=\"soundAudio"+i+"\"></div>"
+				div.className = "elevator";
+				div.style.top = (parentElem1.offsetHeight+6-parentElem1.offsetHeight/parseInt(numfloor))+"px";
+				parentElemG.appendChild(div);
+				div.style.left = (parentElem1.offsetWidth+div.offsetWidth*i)+"px";
+				elevator[i] = new function() {
+					this.id = i;
+				  this.topPlanPlace = 0;
+				  this.topFactPlace = 0;
+				  this.direction = "up";
+				  this.audio = "";
+				};
+			}
+			let elem = document.getElementsByClassName("floor");
+			for (let i=0; i<parseInt(numfloor); i++) {
+				arrFloorTop[i]= parentElem1.offsetHeight - (parentElem1.offsetHeight/parseInt(numfloor)) *(i+1);
+			}
+		}
+/*
+*	startElevator - function activated when the elevator call button is pressed
+*/
+		function startElevator(evel){
+			console.log(evel.className,"====evel");
+			evel.className += " active";
+			var direction;
+			var numElDp = +arrFloorTop.length+2;
+/* calculates the nearest elevator to the button */			
+			for(let i=0; i<Object.keys(elevator).length; i++) {
+				if(Math.abs(elevator[i].topPlanPlace-(+evel.value)) < numElDp && elevator[i].topPlanPlace===elevator[i].topFactPlace) {
+					numElDp = Math.abs(elevator[i].topPlanPlace-(+evel.value));
+					numEl = i; // my elevator
+				}
+			}
+			numfloor = evel.value;
+/* determines the direction of movement of the elevator */			
+			if( evel.value-elevator[numEl].topPlanPlace > 0 ) {
+				direction = "up";
+			} else if( evel.value-elevator[numEl].topPlanPlace < 0 ) {
+				direction = "down";
+			} else{
+				direction = "stop";
+			}
+			if(numElDp != +arrFloorTop.length+2) {
+				elevator[numEl].topPlanPlace  = +evel.value;
+				elevator[numEl].direction  = direction;
+				elevator[numEl].audio  = "ding.mp3"
+			}
+			funcTimer();
+			//console.clear();
+			//console.log(elevator,"====elevator");
+		}
+/* funcTimer - function that allows each elevator to work autonomously */
+		function funcTimer(){
+			var elem = document.getElementsByClassName("elevator");
+			for(let i=0; i<Object.keys(elevator).length; i++) {
+				setTimeout(function() {
+  				funTop(i);
+				}, 1000);
+			}
+		}
+/* funTop - the function is responsible for the movement of elevators */
+		function funTop(i) {
+			//document.getElementById("soundAudio"+i).innerHTML = "<audio src='' autoplay='true' loop='false' volume='0.2' type='audio/mp3'></audio>";
+			var elem = document.getElementsByClassName("elevator");
+			switch(elevator[i].direction) {
+				case "up":
+					if( +elevator[i].topPlanPlace > +elevator[i].topFactPlace ) {
+						elevator[i].topFactPlace++;
+						elem[i].style.top = arrFloorTop[elevator[i].topFactPlace]+"px";
+						funcTimer();
+					}
+					break;
+				case "down":
+					if( +elevator[i].topPlanPlace < +elevator[i].topFactPlace ) {
+						elevator[i].topFactPlace--;
+						elem[i].style.top = arrFloorTop[elevator[i].topFactPlace]+"px";
+						funcTimer();
+					}
+					break;
+			}
+			if( +elevator[i].topPlanPlace == +elevator[i].topFactPlace ) {
+				document.getElementById("soundAudio"+i).innerHTML = "<audio src='"+elevator[i].audio+"' autoplay='true' loop='false' volume='0.2' type='audio/mp3'></audio>";
+				document.getElementById("button"+elevator[i].topPlanPlace).className = "metal linear";
+				setTimeout(function() {
+  				elevator[i].audio  = "";
+  				document.getElementById("soundAudio"+i).innerHTML = "<audio src='' autoplay='true' loop='false' volume='0.2' type='audio/mp3'></audio>";
+				}, 1000);
+			}
+		}
+	</script>
+</body>
+</html>
